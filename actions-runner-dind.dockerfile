@@ -133,7 +133,7 @@ RUN echo "PATH=${PATH}" > /etc/environment \
 # No group definition, as that makes it harder to run docker.
 USER runner
 
-COPY install-rust-sh /home/runner
+
 
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["startup.sh"]
