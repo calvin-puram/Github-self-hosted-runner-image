@@ -119,7 +119,6 @@ RUN echo "PATH=${PATH}" > /etc/environment \
 
 USER runner
 
-COPY install-rust-sh /home/runner
 
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["entrypoint.sh"]
