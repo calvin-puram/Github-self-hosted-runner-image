@@ -131,5 +131,6 @@ RUN echo "PATH=${PATH}" > /etc/environment \
 
 USER runner
 
+
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["entrypoint.sh"]
