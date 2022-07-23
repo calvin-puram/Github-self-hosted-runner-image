@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 
 ARG TARGETPLATFORM
+ARG NIGHTLY_VERSION=nightly
 ARG RUNNER_VERSION=2.292.0
 ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION=20.10.12
@@ -19,6 +20,17 @@ RUN apt update -y \
     ca-certificates \
     dnsutils \
     ftp \
+    acl \
+    apt-utils \
+    ansible \
+    packer \
+    cmake \
+    llvm \
+    pkg-config \
+    libssl-dev \
+    clang \
+    libudev-dev \
+    libclang-dev \
     git \
     iproute2 \
     iputils-ping \
@@ -55,7 +67,7 @@ RUN adduser --disabled-password --gecos "" --uid 1000 runner \
     && usermod -aG docker runner \
     && echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers
 
-# arch command on OS X reports "i386" for Intel CPUs regardless of bitness
+
 # Docker download supports arm64 as aarch64 & amd64 / i386 as x86_64
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
     && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
@@ -76,11 +88,15 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
 
 ENV HOME=/home/runner
 
+# Download Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    export PATH="$PATH:$HOME/.cargo/bin" && \
+    rustup default stable && \
+    rustup update && \
+    rustup update ${NIGHTLY_VERSION} && \
+    rustup target add wasm32-unknown-unknown --toolchain ${NIGHTLY_VERSION} &&
+
 # Runner download supports amd64 as x64
-#
-# libyaml-dev is required for ruby/setup-ruby action.
-# It is installed after installdependencies.sh and before removing /var/lib/apt/lists
-# to avoid rerunning apt-update on its own.
 ENV RUNNER_ASSETS_DIR=/runnertmp
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
     && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x64 ; fi \
@@ -98,10 +114,10 @@ RUN mkdir /opt/hostedtoolcache \
     && chgrp docker /opt/hostedtoolcache \
     && chmod g+rwx /opt/hostedtoolcache
 
-# We place the scripts in `/usr/bin` so that users who extend this image can
-# override them with scripts of the same name placed in `/usr/local/bin`.
+
 COPY entrypoint.sh logger.bash startup.sh /usr/bin/
 COPY supervisor/ /etc/supervisor/conf.d/
+COPY ansible.cfg/ /etc/ansible
 RUN chmod +x /usr/bin/startup.sh /usr/bin/entrypoint.sh
 
 # arch command on OS X reports "i386" for Intel CPUs regardless of bitness
@@ -113,14 +129,14 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
 
 VOLUME /var/lib/docker
 
-# Add the Python "User Script Directory" to the PATH
+# Add the Python to the PATH
 ENV PATH="${PATH}:${HOME}/.local/bin"
 ENV ImageOS=ubuntu20
 
 RUN echo "PATH=${PATH}" > /etc/environment \
     && echo "ImageOS=${ImageOS}" >> /etc/environment
 
-# No group definition, as that makes it harder to run docker.
+
 USER runner
 
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]

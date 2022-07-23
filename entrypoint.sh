@@ -113,26 +113,7 @@ if [ ! -f .runner ]; then
 fi
 
 cat .runner
-# Note: the `.runner` file's content should be something like the below:
-#
-# $ cat /runner/.runner
-# {
-# "agentId": 117, #=> corresponds to the ID of the runner
-# "agentName": "THE_RUNNER_POD_NAME",
-# "poolId": 1,
-# "poolName": "Default",
-# "serverUrl": "https://pipelines.actions.githubusercontent.com/SOME_RANDOM_ID",
-# "gitHubUrl": "https://github.com/USER/REPO",
-# "workFolder": "/some/work/dir" #=> corresponds to Runner.Spec.WorkDir
-# }
-#
-# Especially `agentId` is important, as other than listing all the runners in the repo,
-# this is the only change we could get the exact runnner ID which can be useful for further
-# GitHub API call like the below. Note that 171 is the agentId seen above.
-#   curl \
-#     -H "Accept: application/vnd.github.v3+json" \
-#     -H "Authorization: bearer ${GITHUB_TOKEN}"
-#     https://api.github.com/repos/USER/REPO/actions/runners/171
+
 
 # Hack due to the DinD volumes
 if [ -z "${UNITTEST:-}" ] && [ -e ./externalstmp ]; then
@@ -152,15 +133,7 @@ fi
 # Unset entrypoint environment variables so they don't leak into the runner environment
 unset RUNNER_NAME RUNNER_REPO RUNNER_TOKEN STARTUP_DELAY_IN_SECONDS DISABLE_WAIT_FOR_DOCKER
 
-# Docker ignores PAM and thus never loads the system environment variables that
-# are meant to be set in every environment of every user. We emulate the PAM
-# behavior by reading the environment variables without interpreting them.
-#
-# https://github.com/actions-runner-controller/actions-runner-controller/issues/1135
-# https://github.com/actions/runner/issues/1703
 
-# /etc/environment may not exist when running unit tests depending on the platform being used
-# (e.g. Mac OS) so we just skip the mapping entirely
 if [ -z "${UNITTEST:-}" ]; then
   mapfile -t env </etc/environment
 fi
