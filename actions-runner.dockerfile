@@ -102,8 +102,7 @@ COPY entrypoint.sh logger.bash startup.sh update-status /usr/bin/
 COPY supervisor/ /etc/supervisor/conf.d/
 RUN chmod +x /usr/bin/startup.sh /usr/bin/entrypoint.sh
 
-# Configure hooks folder structure.
-COPY hooks /etc/arc/hooks/
+
 
 # arch command on OS X reports "i386" for Intel CPUs regardless of bitness
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
@@ -124,6 +123,8 @@ RUN echo "PATH=${PATH}" > /etc/environment \
 
 # No group definition, as that makes it harder to run docker.
 USER runner
+# Configure hooks folder structure.
+COPY hooks /etc/arc/hooks/
 
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["startup.sh"]
